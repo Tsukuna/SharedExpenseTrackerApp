@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="SharedExpenseTrackerApp.Database/SharedExpenseTrackerApp.Database.csproj" />
+  <Project Path="SharedExpenseTrackerApp.Domain/SharedExpenseTrackerApp.Domain.csproj" />
+  <Project Path="SharedExpenseTrackerApp.Shared/SharedExpenseTrackerApp.Shared.csproj" Id="bc43ee25-f7a2-4af1-a76b-306ba71e4640" />
+</Solution>
