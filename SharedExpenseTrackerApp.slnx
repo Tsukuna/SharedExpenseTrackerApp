@@ -2,4 +2,5 @@
   <Project Path="SharedExpenseTrackerApp.Database/SharedExpenseTrackerApp.Database.csproj" />
   <Project Path="SharedExpenseTrackerApp.Domain/SharedExpenseTrackerApp.Domain.csproj" />
   <Project Path="SharedExpenseTrackerApp.Shared/SharedExpenseTrackerApp.Shared.csproj" Id="bc43ee25-f7a2-4af1-a76b-306ba71e4640" />
+  <Project Path="SharedExpenseTrackerApp.WebApi/SharedExpenseTrackerApp.WebApi.csproj" Id="0def4d3c-66e4-4bd9-b91f-7727897cbc00" />
 </Solution>
