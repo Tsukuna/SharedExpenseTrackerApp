@@ -189,7 +189,3 @@ npx tailwindcss -i ./wwwroot/css/site.css -o ./wwwroot/css/output.css --watch
 | **Expense Data** | Individual expenses (amount, paid/unpaid status, etc.) |
 
 ---
-
-## License
-
-This project is provided as-is for educational / internal use. Add your preferred license if distributing publicly.
