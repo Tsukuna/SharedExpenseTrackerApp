@@ -112,3 +112,122 @@ A collaborative expense tracking application for families, roommates, or groups.
 - [x] View Lists (all lists + expenses in each)
 - [x] Mark paid / unpaid (updates amount)
 - [x] Summary of unpaid expenses
+
+---
+
+## Frontend Build Instructions (ASP.NET Core Web MVC)
+
+### Technology Stack
+| Layer              | Technology                          | Purpose |
+|--------------------|-------------------------------------|---------|
+| Framework          | ASP.NET Core Web MVC                | Server-rendered views + controllers |
+| Styling            | Tailwind CSS                        | Responsive, utility-first, clean UI |
+| HTTP Client        | Axios                               | All API calls (CRUD, auth, errors) |
+| Real-time          | SignalR                             | Live unpaid-expense count updates |
+| Charts             | ApexCharts                          | Simple unpaid expense summary chart |
+| Data Passing       | **ViewData only**                   | Strictly no ViewBag |
+
+### Core Rules
+1. **ViewData only** — Controllers must pass data exclusively via `ViewData["Key"]`. Do **not** use `ViewBag` or strongly-typed models for view data.
+2. **Tailwind CSS** — All styling via Tailwind utility classes. Keep layout mobile-first, responsive, tidy, and clean.
+3. **Axios** — Centralize API calls in a shared JS module. Handle loading, success, and error states consistently.
+4. **SignalR** — Connect to a hub that broadcasts unpaid-count changes. When an expense is marked paid → decrease count; marked unpaid → increase count. Update badge/counter in real time for all group members.
+5. **ApexCharts** — Use a simple bar or donut chart on the unpaid summary view. Keep configuration minimal and readable.
+6. **UI/UX** — Clean hierarchy, consistent spacing, clear action buttons, helpful empty states, and accessible labels. Prefer card-based layouts and subtle shadows over heavy decoration.
+
+### Suggested Project Structure (MVC)
+```
+/Controllers
+  AuthController.cs
+  GroupsController.cs
+  ListsController.cs
+  ExpensesController.cs
+/Views
+  /Shared
+    _Layout.cshtml          (Tailwind + SignalR + Axios + ApexCharts scripts)
+    _Nav.cshtml
+  /Auth
+    Login.cshtml
+    Register.cshtml
+  /Groups
+    Index.cshtml            (Group Dashboard)
+    Create.cshtml
+    Details.cshtml          (Group View)
+    Join.cshtml
+  /Lists
+    Index.cshtml            (All lists in a group)
+    Create.cshtml
+    Details.cshtml          (Single list + expenses)
+  /Expenses
+    Create.cshtml
+    Summary.cshtml          (Unpaid summary + ApexChart)
+/wwwroot
+  /js
+    api.js                  (Axios wrappers)
+    signalr-client.js       (Hub connection + unpaid count handlers)
+    charts.js               (ApexCharts helpers)
+  /css
+    site.css                (Tailwind entry / custom utilities if needed)
+```
+
+### ViewData Usage Example
+```csharp
+// Controller
+public IActionResult Details(int listId)
+{
+    ViewData["ListId"] = listId;
+    ViewData["ListName"] = "...";
+    ViewData["Expenses"] = expenses;          // list of expense objects
+    ViewData["UnpaidTotal"] = unpaidTotal;
+    ViewData["UnpaidCount"] = unpaidCount;
+    return View();
+}
+```
+```html
+<!-- View -->
+<h1 class="text-2xl font-semibold">@ViewData["ListName"]</h1>
+<span id="unpaid-badge" class="...">@ViewData["UnpaidCount"] unpaid</span>
+```
+
+### Axios Patterns
+- Base instance with auth token interceptor.
+- Dedicated methods: `login()`, `register()`, `createGroup()`, `joinGroup()`, `getLists()`, `createExpense()`, `togglePaid()`, `getUnpaidSummary()`, etc.
+- Always show loading indicator and user-friendly error toast / message.
+
+### SignalR Real-time Unpaid Count
+- Hub name suggestion: `ExpenseHub`.
+- Events:
+  - `UnpaidCountChanged(groupId, listId, newCount)`
+  - Client joins group/list groups on page load.
+- On `togglePaid` success → server pushes new count → all connected clients update the badge and (optionally) the chart.
+
+### ApexCharts (Unpaid Summary)
+- Simple donut or horizontal bar showing unpaid vs paid totals (or breakdown by list).
+- Initialize once on the Summary page; update data live via SignalR if desired.
+- Keep options minimal: clean labels, consistent colors, responsive container.
+
+### UI/UX Guidelines
+- **Layout**: Sticky top nav with logo + user menu + real-time unpaid badge.
+- **Cards**: Soft rounded cards with subtle border/shadow for groups, lists, and expenses.
+- **Actions**: Primary (blue/indigo) for create/save, secondary (gray) for cancel, danger (red) for delete.
+- **Empty states**: Friendly illustration or icon + short message + CTA button.
+- **Forms**: Clear labels, Tailwind form controls, validation messages under fields.
+- **Responsive**: Mobile-first; stack cards on small screens, side-by-side on larger screens.
+- **Feedback**: Toast notifications for success/error; disable buttons while submitting.
+- **Accessibility**: Proper contrast, focus states, aria labels on interactive elements.
+
+### Implementation Order (Recommended)
+1. Scaffold MVC project + Tailwind + Axios + SignalR + ApexCharts.
+2. Auth views (Login / Register) + Axios auth flow + store token.
+3. Group Dashboard (list groups via ViewData) + Create / Join.
+4. Group Details → Lists overview.
+5. List Details → Expenses table + Add Expense + Mark Paid/Unpaid.
+6. Wire SignalR for live unpaid count badge.
+7. Unpaid Summary page with ApexCharts.
+8. Polish UI (spacing, empty states, loading skeletons, toasts).
+
+### Notes
+- Primary/default list cannot be deleted (enforce in UI + API).
+- All real-time updates must be scoped to the current group (and preferably list).
+- Keep JavaScript modular and free of inline business logic in views where possible.
+- Prefer progressive enhancement: pages should still work without SignalR (static counts), but live updates improve UX.

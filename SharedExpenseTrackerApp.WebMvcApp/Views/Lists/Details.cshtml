@@ -1,0 +1,323 @@
+@using SharedExpenseTrackerApp.Domain.Models.Expense
+@{
+    ViewData["Title"] = ViewData["ListName"];
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var expenses = ViewData["Expenses"] as List<ExpenseRespModel> ?? new();
+    long listId = (long)(ViewData["ListId"] ?? 0L);
+    long groupId = (long)(ViewData["GroupId"] ?? 0L);
+    bool isDefault = (bool)(ViewData["IsDefault"] ?? false);
+    int unpaidCount = (int)(ViewData["UnpaidCount"] ?? 0);
+    int unpaidTotal = (int)(ViewData["UnpaidTotal"] ?? 0);
+    long currentUserId = long.Parse(Context.Session.GetString("UserId") ?? "0");
+}
+
+<div class="mx-auto max-w-6xl px-4 py-8">
+
+    <!-- Back -->
+    <a href="/Groups/Details/@groupId"
+       class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-600 transition-colors mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to group
+    </a>
+
+    <!-- Page header -->
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <h1 class="text-2xl font-bold text-slate-900">@ViewData["ListName"]</h1>
+                @if (isDefault)
+                {
+                    <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">Default</span>
+                }
+                <!-- Live unpaid badge -->
+                <span id="unpaid-badge"
+                      class="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">
+                    <span id="unpaid-count">@unpaidCount</span> unpaid
+                    &bull; @unpaidTotal.ToString("N0") ks
+                </span>
+            </div>
+            <p class="mt-1 text-sm text-slate-400">@expenses.Count total expense(s)</p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <a href="/Expenses/Summary/@listId"
+               class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Summary
+            </a>
+            @if (!isDefault)
+            {
+                <button id="edit-list-btn" onclick="openEditModal()"
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
+                </button>
+                <button id="delete-list-btn" onclick="confirmDelete()"
+                        class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete
+                </button>
+            }
+            <button onclick="openAddExpenseModal()"
+                    class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Expense
+            </button>
+        </div>
+    </div>
+
+    <!-- Expense Table -->
+    @if (!expenses.Any())
+    {
+        <div class="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-white py-16 text-center">
+            <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+            </div>
+            <h2 class="text-lg font-semibold text-slate-800">No expenses yet</h2>
+            <p class="mt-1 text-sm text-slate-400 max-w-xs">Add your first expense to start tracking.</p>
+            <button onclick="openAddExpenseModal()"
+                    class="mt-5 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors">
+                Add first expense
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                        <th class="px-5 py-3">Expense</th>
+                        <th class="px-5 py-3">Note</th>
+                        <th class="px-5 py-3 text-right">Amount</th>
+                        <th class="px-5 py-3 text-center">Status</th>
+                        <th class="px-5 py-3 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="expense-table-body" class="divide-y divide-slate-100">
+                    @foreach (var exp in expenses)
+                    {
+                        <tr id="row-@exp.Id" class="hover:bg-slate-50 transition-colors @(exp.IsPaid ? "opacity-60" : "")">
+                            <td class="px-5 py-3.5 font-medium text-slate-800">@exp.Name</td>
+                            <td class="px-5 py-3.5 text-slate-400 text-xs">@(exp.Note ?? "—")</td>
+                            <td class="px-5 py-3.5 text-right font-semibold text-slate-700">@exp.Amount.ToString("N0") ks</td>
+                            <td class="px-5 py-3.5 text-center">
+                                @if (exp.IsPaid)
+                                {
+                                    <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">Paid</span>
+                                }
+                                else
+                                {
+                                    <span class="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-600">Unpaid</span>
+                                }
+                            </td>
+                            <td class="px-5 py-3.5 text-center">
+                                <button class="toggle-paid-btn rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors
+                                               @(exp.IsPaid ? "bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-600" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100")"
+                                        data-expense-id="@exp.Id"
+                                        data-is-paid="@exp.IsPaid.ToString().ToLower()"
+                                        data-list-id="@listId"
+                                        data-group-id="@groupId"
+                                        onclick="togglePaid(this)">
+                                    @(exp.IsPaid ? "Mark Unpaid" : "Mark Paid")
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- ── Add Expense Modal ───────────────────────────────────────────────────── -->
+<div id="add-expense-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4">
+    <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+        <div class="h-1 bg-gradient-to-r from-brand-500 to-indigo-400"></div>
+        <div class="px-6 py-6">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-lg font-bold text-slate-900">Add Expense</h2>
+                <button onclick="closeModal('add-expense-modal')" class="text-slate-400 hover:text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="add-expense-error" class="hidden mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700"></div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Name</label>
+                    <input id="exp-name" type="text" placeholder="e.g. Electricity bill"
+                           class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 transition-all" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Amount (ks)</label>
+                    <input id="exp-amount" type="number" min="1" placeholder="e.g. 50000"
+                           class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 transition-all" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Note <span class="text-slate-400">(optional)</span></label>
+                    <input id="exp-note" type="text" placeholder="Any additional detail"
+                           class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 transition-all" />
+                </div>
+                <button id="save-expense-btn" onclick="saveExpense()"
+                        class="w-full rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all">
+                    Add expense
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Edit List Modal ────────────────────────────────────────────────────────  -->
+<div id="edit-list-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4">
+    <div class="w-full max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden">
+        <div class="h-1 bg-gradient-to-r from-brand-500 to-indigo-400"></div>
+        <div class="px-6 py-6">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-lg font-bold text-slate-900">Rename List</h2>
+                <button onclick="closeModal('edit-list-modal')" class="text-slate-400 hover:text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="edit-list-error" class="hidden mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700"></div>
+            <div class="space-y-4">
+                <input id="edit-list-name" type="text" value="@ViewData["ListName"]"
+                       class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 transition-all" />
+                <button onclick="saveListEdit()"
+                        class="w-full rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-all">
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+<script>
+    const LIST_ID   = @listId;
+    const GROUP_ID  = @groupId;
+
+    // ── Modal helpers ──────────────────────────────────────────────────────────
+    function openAddExpenseModal() {
+        document.getElementById('add-expense-modal').classList.replace('hidden','flex');
+        document.getElementById('exp-name').focus();
+    }
+    function openEditModal() {
+        document.getElementById('edit-list-modal').classList.replace('hidden','flex');
+    }
+    function closeModal(id) {
+        document.getElementById(id).classList.replace('flex','hidden');
+    }
+    // Close on backdrop click
+    ['add-expense-modal','edit-list-modal'].forEach(id => {
+        document.getElementById(id).addEventListener('click', function(e) {
+            if (e.target === this) closeModal(id);
+        });
+    });
+
+    // ── Add Expense ───────────────────────────────────────────────────────────
+    async function saveExpense() {
+        const name   = document.getElementById('exp-name').value.trim();
+        const amount = parseInt(document.getElementById('exp-amount').value, 10);
+        const note   = document.getElementById('exp-note').value.trim() || null;
+        const errBox = document.getElementById('add-expense-error');
+        const btn    = document.getElementById('save-expense-btn');
+
+        if (!name)           { errBox.textContent = 'Name is required.'; errBox.classList.remove('hidden'); return; }
+        if (!amount || amount < 1) { errBox.textContent = 'Enter a valid amount.'; errBox.classList.remove('hidden'); return; }
+
+        btn.disabled = true; btn.textContent = 'Adding…';
+        errBox.classList.add('hidden');
+        try {
+            await api.createExpense(LIST_ID, GROUP_ID, name, amount, note);
+            showToast('Expense added!', 'success');
+            closeModal('add-expense-modal');
+            window.location.reload();
+        } catch(e) {
+            errBox.textContent = e.response?.data?.message ?? 'Failed to add expense.';
+            errBox.classList.remove('hidden');
+            btn.disabled = false; btn.textContent = 'Add expense';
+        }
+    }
+
+    // ── Toggle Paid ───────────────────────────────────────────────────────────
+    async function togglePaid(btn) {
+        const expenseId = parseInt(btn.dataset.expenseId);
+        const isPaid    = btn.dataset.isPaid === 'true';
+        const newPaid   = !isPaid;
+
+        btn.disabled = true;
+        try {
+            await api.togglePaid(expenseId, LIST_ID, GROUP_ID, newPaid);
+            // UI update is done by SignalR or fallback
+            const row = document.getElementById(`row-${expenseId}`);
+            if (newPaid) {
+                row.classList.add('opacity-60');
+                btn.textContent = 'Mark Unpaid';
+                btn.classList.replace('bg-emerald-50','bg-slate-100');
+                btn.classList.replace('text-emerald-700','text-slate-600');
+                row.querySelector('.rounded-full').textContent = 'Paid';
+                row.querySelector('.rounded-full').className = 'rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700';
+            } else {
+                row.classList.remove('opacity-60');
+                btn.textContent = 'Mark Paid';
+                btn.classList.replace('bg-slate-100','bg-emerald-50');
+                btn.classList.replace('text-slate-600','text-emerald-700');
+                row.querySelector('.rounded-full').textContent = 'Unpaid';
+                row.querySelector('.rounded-full').className = 'rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-600';
+            }
+            btn.dataset.isPaid = String(newPaid);
+            showToast(newPaid ? 'Marked as paid.' : 'Marked as unpaid.', 'success');
+        } catch(e) {
+            showToast(e.response?.data?.message ?? 'Failed to update.', 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // ── Edit List ─────────────────────────────────────────────────────────────
+    async function saveListEdit() {
+        const name = document.getElementById('edit-list-name').value.trim();
+        const errBox = document.getElementById('edit-list-error');
+        if (!name) { errBox.textContent = 'Name is required.'; errBox.classList.remove('hidden'); return; }
+        try {
+            await api.editList(LIST_ID, name);
+            showToast('List renamed.', 'success');
+            closeModal('edit-list-modal');
+            document.querySelector('h1').textContent = name;
+        } catch(e) {
+            errBox.textContent = e.response?.data?.message ?? 'Failed to rename.';
+            errBox.classList.remove('hidden');
+        }
+    }
+
+    // ── Delete List ───────────────────────────────────────────────────────────
+    async function confirmDelete() {
+        if (!confirm('Delete this list? All expenses inside will also be deleted.')) return;
+        try {
+            await api.deleteList(LIST_ID, GROUP_ID);
+            showToast('List deleted.', 'success');
+            setTimeout(() => { window.location.href = `/Groups/Details/${GROUP_ID}`; }, 800);
+        } catch(e) {
+            showToast(e.response?.data?.message ?? 'Cannot delete this list.', 'error');
+        }
+    }
+
+    // ── SignalR: join list group ───────────────────────────────────────────────
+    window._signalRConfig = { groupId: GROUP_ID, listId: LIST_ID };
+</script>
+}

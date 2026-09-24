@@ -1,0 +1,87 @@
+@{
+    ViewData["Title"] = (bool)(ViewData["IsFirst"] ?? false) ? "Create Your First List" : "New List";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    long groupId = (long)(ViewData["GroupId"] ?? 0L);
+    bool isFirst = (bool)(ViewData["IsFirst"] ?? false);
+}
+
+<div class="mx-auto max-w-lg px-4 py-12">
+    <a href="/Groups/Details/@groupId"
+       class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-600 transition-colors mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to group
+    </a>
+
+    <div class="rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-200/60 overflow-hidden">
+        <div class="h-1.5 bg-gradient-to-r from-amber-400 via-orange-400 to-brand-400"></div>
+        <div class="px-8 py-8">
+            <div class="mb-7">
+                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-xl @(isFirst ? "bg-amber-50" : "bg-brand-50")">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 @(isFirst ? "text-amber-600" : "text-brand-600")" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900">
+                    @(isFirst ? "Create your first list" : "Create a new list")
+                </h1>
+                <p class="mt-1 text-sm text-slate-500">
+                    @(isFirst
+                        ? "This will be your group's primary list (e.g. Monthly Bills, Rent & Utilities)."
+                        : "Add a custom list for a specific category (e.g. Shopping, Utilities).")
+                </p>
+            </div>
+
+            <div id="list-error" class="hidden mb-5 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700"></div>
+
+            <div class="space-y-5">
+                <div>
+                    <label for="listName" class="block text-sm font-medium text-slate-700 mb-1.5">List name</label>
+                    <input id="listName" type="text" required autofocus
+                           placeholder="@(isFirst ? "e.g. Monthly Bills, Rent & Utilities" : "e.g. Groceries, Shopping")"
+                           class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400
+                                  focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 transition-all" />
+                </div>
+
+                <button id="create-list-btn"
+                        class="w-full rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white shadow-sm
+                               hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2
+                               disabled:opacity-60 disabled:cursor-not-allowed transition-all">
+                    Create list
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+<script>
+    document.getElementById('create-list-btn').addEventListener('click', async function () {
+        const name = document.getElementById('listName').value.trim();
+        const errBox = document.getElementById('list-error');
+        const btn = this;
+
+        if (!name) {
+            errBox.textContent = 'Please enter a list name.';
+            errBox.classList.remove('hidden');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Creating…';
+        errBox.classList.add('hidden');
+
+        try {
+            const res = await api.createList(@groupId, name);
+            // Navigate to the new list
+            window.location.href = `/Lists/Details/${res.data.listId}`;
+        } catch (e) {
+            errBox.textContent = e.response?.data?.message ?? 'Failed to create list. Please try again.';
+            errBox.classList.remove('hidden');
+            btn.disabled = false;
+            btn.textContent = 'Create list';
+        }
+    });
+</script>
+}

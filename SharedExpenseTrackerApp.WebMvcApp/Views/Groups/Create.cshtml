@@ -1,0 +1,62 @@
+@{
+    ViewData["Title"] = "Create Group";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="mx-auto max-w-lg px-4 py-12">
+    <!-- Back link -->
+    <a asp-controller="Groups" asp-action="Index"
+       class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-600 transition-colors mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to groups
+    </a>
+
+    <div class="rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-200/60 overflow-hidden">
+        <div class="h-1.5 bg-gradient-to-r from-brand-500 via-brand-400 to-indigo-400"></div>
+        <div class="px-8 py-8">
+            <div class="mb-7">
+                <h1 class="text-2xl font-bold text-slate-900">Create a new group</h1>
+                <p class="mt-1 text-sm text-slate-500">Give your group a name that describes your team (e.g. "Family", "Flat 3B").</p>
+            </div>
+
+            @if (ViewData["Error"] != null)
+            {
+                <div class="mb-5 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">@ViewData["Error"]</div>
+            }
+
+            <form asp-controller="Groups" asp-action="Create" method="post" id="create-group-form" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="space-y-5">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-slate-700 mb-1.5">Group name</label>
+                        <input id="name" name="name" type="text" required autofocus
+                               value="@ViewData["Name"]"
+                               placeholder="e.g. Our Household, Flat 3B, Family"
+                               class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400
+                                      focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 transition-all" />
+                        <p class="mt-1.5 text-xs text-slate-400">A share code will be generated automatically so others can join.</p>
+                    </div>
+
+                    <button id="create-btn" type="submit"
+                            class="w-full rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white shadow-sm
+                                   hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2
+                                   disabled:opacity-60 disabled:cursor-not-allowed transition-all">
+                        Create group &amp; set up first list →
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+<script>
+    document.getElementById('create-group-form').addEventListener('submit', function () {
+        const btn = document.getElementById('create-btn');
+        btn.disabled = true;
+        btn.textContent = 'Creating…';
+    });
+</script>
+}

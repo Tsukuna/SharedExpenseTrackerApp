@@ -1,0 +1,76 @@
+@{
+    ViewData["Title"] = "Join Group";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="mx-auto max-w-lg px-4 py-12">
+    <a asp-controller="Groups" asp-action="Index"
+       class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-600 transition-colors mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to groups
+    </a>
+
+    <div class="rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-200/60 overflow-hidden">
+        <div class="h-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-brand-400"></div>
+        <div class="px-8 py-8">
+            <div class="mb-7">
+                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900">Join a group</h1>
+                <p class="mt-1 text-sm text-slate-500">Enter the share code provided by the group creator.</p>
+            </div>
+
+            @if (ViewData["Error"] != null)
+            {
+                <div class="mb-5 flex items-start gap-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    @ViewData["Error"]
+                </div>
+            }
+
+            <form asp-controller="Groups" asp-action="Join" method="post" id="join-form" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="space-y-5">
+                    <div>
+                        <label for="shareCode" class="block text-sm font-medium text-slate-700 mb-1.5">Share code</label>
+                        <input id="shareCode" name="shareCode" type="text" required autofocus autocomplete="off"
+                               value="@ViewData["ShareCode"]"
+                               placeholder="e.g. ABC123XY"
+                               class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm font-mono text-slate-900
+                                      placeholder-slate-400 uppercase tracking-widest
+                                      focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 transition-all" />
+                        <p class="mt-1.5 text-xs text-slate-400">Ask the group creator to share their group's code with you.</p>
+                    </div>
+
+                    <button id="join-btn" type="submit"
+                            class="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white shadow-sm
+                                   hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2
+                                   disabled:opacity-60 disabled:cursor-not-allowed transition-all">
+                        Join group
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+<script>
+    // Auto-uppercase the share code input
+    const sc = document.getElementById('shareCode');
+    sc.addEventListener('input', () => { sc.value = sc.value.toUpperCase(); });
+
+    document.getElementById('join-form').addEventListener('submit', function () {
+        const btn = document.getElementById('join-btn');
+        btn.disabled = true;
+        btn.textContent = 'Joining…';
+    });
+</script>
+}
