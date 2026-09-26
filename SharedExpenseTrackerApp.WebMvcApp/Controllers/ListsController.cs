@@ -21,11 +21,12 @@ public class ListsController : Controller
     private long CurrentUserId => HttpContext.Session.GetUserId()!.Value;
 
     // ─── GET /Lists/Create/{groupId} ─────────────────────────────────────────
-    public async Task<IActionResult> Create(long groupId, bool isFirst = false)
+    public async Task<IActionResult> Create(long id = 0, long groupId = 0, bool isFirst = false)
     {
+        var targetGroupId = id != 0 ? id : groupId;
         ViewData["Title"] = isFirst ? "Create Your First List" : "Create New List";
         ViewData["FullName"] = HttpContext.Session.GetFullName();
-        ViewData["GroupId"] = groupId;
+        ViewData["GroupId"] = targetGroupId;
         ViewData["IsFirst"] = isFirst;
         return View();
     }

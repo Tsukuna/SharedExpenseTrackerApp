@@ -28,16 +28,17 @@ public class ExpensesController : Controller
 
     private long CurrentUserId => HttpContext.Session.GetUserId()!.Value;
 
-    // ─── GET /Expenses/Create/{listId} ───────────────────────────────────────
-    public async Task<IActionResult> Create(long listId)
+    // ─── GET /Expenses/Create/{id} ──────────────────────────────────────────
+    public async Task<IActionResult> Create(long id = 0, long listId = 0)
     {
-        var listResult = await _listService.GetExpenseListByIdAsync(listId, CurrentUserId);
+        var targetListId = id != 0 ? id : listId;
+        var listResult = await _listService.GetExpenseListByIdAsync(targetListId, CurrentUserId);
         if (!listResult.IsSuccess)
             return RedirectToAction("Index", "Groups");
 
         ViewData["Title"] = "Add Expense";
         ViewData["FullName"] = HttpContext.Session.GetFullName();
-        ViewData["ListId"] = listId;
+        ViewData["ListId"] = targetListId;
         ViewData["ListName"] = listResult.Data!.Name;
         ViewData["GroupId"] = listResult.Data.GroupId;
         return View();
@@ -95,16 +96,17 @@ public class ExpensesController : Controller
         });
     }
 
-    // ─── GET /Expenses/Summary/{listId} ──────────────────────────────────────
-    public async Task<IActionResult> Summary(long listId)
+    // ─── GET /Expenses/Summary/{id} ─────────────────────────────────────────
+    public async Task<IActionResult> Summary(long id = 0, long listId = 0)
     {
-        var listResult = await _listService.GetExpenseListByIdAsync(listId, CurrentUserId);
+        var targetListId = id != 0 ? id : listId;
+        var listResult = await _listService.GetExpenseListByIdAsync(targetListId, CurrentUserId);
         if (!listResult.IsSuccess)
             return RedirectToAction("Index", "Groups");
 
-        var summaryResult = await _expenseService.GetUnpaidSummaryAsync(listId, CurrentUserId);
+        var summaryResult = await _expenseService.GetUnpaidSummaryAsync(targetListId, CurrentUserId);
         if (!summaryResult.IsSuccess)
-            return RedirectToAction("Details", "Lists", new { id = listId });
+            return RedirectToAction("Details", "Lists", new { id = targetListId });
 
         var summary = summaryResult.Data!;
         var list = listResult.Data!;
@@ -117,7 +119,7 @@ public class ExpensesController : Controller
 
         ViewData["Title"] = $"Summary — {list.Name}";
         ViewData["FullName"] = HttpContext.Session.GetFullName();
-        ViewData["ListId"] = listId;
+        ViewData["ListId"] = targetListId;
         ViewData["ListName"] = list.Name;
         ViewData["GroupId"] = list.GroupId;
         ViewData["UnpaidCount"] = summary.TotalUnpaidCount;
